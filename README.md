@@ -1,6 +1,5 @@
 # Pong
-Pong made in Golang
-
+Pong made in Golang  
 Code is rough and needs to be cleaned up
 
 ## Dependencies
