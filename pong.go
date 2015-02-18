@@ -16,17 +16,16 @@ import (
 
 var (
 	//Main
-	running      bool
 	windowWidth  = 640
 	windowHeight = 480
 	title        = "Pong"
-	maxFrames    = time.Duration(60)
 	prevTime     time.Time
 	deltaTime    float64
 	padding      = 20.0
 	rscore       = 0
 	lscore       = 0
 	//FPS
+	maxFrames = time.Duration(60)
 	accumTime float64
 	frames    int
 	fps       = 0.0
@@ -45,6 +44,7 @@ var (
 	ballVerts [][2]float64
 )
 
+//Objects and what methods it has
 type object interface {
 	draw()
 	step()
@@ -53,16 +53,19 @@ type object interface {
 	getCol() bCollider
 }
 
+//Basic object properties
 type obj struct {
 	col colours.Colour
 	pos vector.Vector2
 }
 
+//Collider fields
 type bCollider struct {
 	x, y, width, height float64
 	tag                 string
 }
 
+//Defines ball's feilds
 type ball struct {
 	obj
 	bCollider
@@ -70,24 +73,29 @@ type ball struct {
 	velocity vector.Vector2
 }
 
-func (b ball) xPos() float64 {
+//X getter
+func (b *ball) xPos() float64 {
 	return b.pos.X()
 }
 
-func (b ball) yPos() float64 {
+//Y getter
+func (b *ball) yPos() float64 {
 	return b.pos.Y()
 }
 
-func (b ball) draw() {
+//Draw a pre defined list of verticies of a cricle
+func (b *ball) draw() {
 	//drawUtil.DrawSquare(b.radius, b.col)
 	//drawUtil.DrawCircle(8, colours.White, 12)
 	drawUtil.DrawVertexes(ballVerts, colours.White)
 }
 
+//Collider getter
 func (b *ball) getCol() bCollider {
 	return b.bCollider
 }
 
+//Ball logic: collision, movement
 func (b *ball) step() {
 	//Move
 	b.pos = b.pos.Add(b.velocity.Mul(deltaTime))
@@ -129,6 +137,7 @@ func (b *ball) step() {
 	}
 }
 
+//Define paddle fields
 type paddle struct {
 	obj
 	bCollider
@@ -137,22 +146,27 @@ type paddle struct {
 	id            int
 }
 
-func (p paddle) draw() {
+//Draw the paddle rectangle
+func (p *paddle) draw() {
 	drawUtil.DrawRect(p.width, p.height, p.col)
 }
 
-func (p paddle) xPos() float64 {
+//X getter
+func (p *paddle) xPos() float64 {
 	return p.pos.X()
 }
 
-func (p paddle) yPos() float64 {
+//Y getter
+func (p *paddle) yPos() float64 {
 	return p.pos.Y()
 }
 
+//Collider getter
 func (p *paddle) getCol() bCollider {
 	return p.bCollider
 }
 
+//Paddle logic: movement, collider.
 func (p *paddle) step() {
 	p.bCollider.x = p.pos[0]
 	p.bCollider.y = p.pos[1]
@@ -176,10 +190,12 @@ func (p *paddle) step() {
 	p.pos[1] = clamp(p.pos[1], paddleHeight/2, float64(windowHeight)-paddleHeight/2)
 }
 
+//Displays and glfw errors
 func errorCallback(err glfw.ErrorCode, desc string) {
 	fmt.Printf("%v: %v\n", err, desc)
 }
 
+//Initialises callbacks, drawing perspective, fonts etc.
 func initOpenGl(window *glfw.Window) {
 	monitor, _ := glfw.GetPrimaryMonitor()
 	vidMode, _ := monitor.GetVideoMode()
@@ -192,6 +208,8 @@ func initOpenGl(window *glfw.Window) {
 	window.SetPosition(int(*sw/2)-(w/2), int(*sh/2)-(h/2))
 
 	window.SetSizeCallback(onResize)
+	window.SetKeyCallback(onKey)
+	glfw.SetErrorCallback(errorCallback)
 
 	gl.Viewport(0, 0, width, height)
 	gl.MatrixMode(gl.PROJECTION)
@@ -206,6 +224,8 @@ func initOpenGl(window *glfw.Window) {
 	ballVerts = drawUtil.MakeCircle(8, 12)
 }
 
+//fixed drawing perspective and object locations when the
+//Window is resized
 func onResize(window *glfw.Window, w, h int) {
 	if w < 1 {
 		w = 1
@@ -234,6 +254,8 @@ func onResize(window *glfw.Window, w, h int) {
 	}
 }
 
+//Render things to the buffer and cycle through all objects'
+//Draw events. Plus draw things such as the background and score
 func render() {
 	gl.Clear(gl.COLOR_BUFFER_BIT)
 	gl.Enable(gl.BLEND)
@@ -281,6 +303,8 @@ func render() {
 	}
 }
 
+//handles calling a given objects draw function
+//while also making sure it is in the right place and drawn correctly
 func drawObject(o object) {
 	gl.PushMatrix()
 	//position
@@ -289,10 +313,12 @@ func drawObject(o object) {
 	gl.PopMatrix()
 }
 
+//Create an object and store it's reference
 func createObject(o object) {
 	objects = append(objects, o)
 }
 
+//Creates room's objects
 func startupObjects() {
 	//Make ball
 	createObject(&ball{obj: obj{colours.White, vector.Vector2{100, 100}},
@@ -308,6 +334,7 @@ func startupObjects() {
 		bCollider: bCollider{float64(windowWidth) - 20, float64(windowHeight) / 2, paddleWidth, paddleHeight, "paddle"}})
 }
 
+//Runs the step event logic for every object
 func runSteps() {
 	//Processes
 	for _, o := range objects {
@@ -315,9 +342,10 @@ func runSteps() {
 	}
 }
 
+//Specifically finds whether there is intent to move
 func getMoveInp(w *glfw.Window) (bool, bool) {
 	//u, d bool
-	var u, d bool
+	var u, d bool = false, false
 	if w.GetKey(glfw.KeyUp) == glfw.Press {
 		u = true
 	}
@@ -326,24 +354,26 @@ func getMoveInp(w *glfw.Window) (bool, bool) {
 		d = true
 	}
 
-	if w.GetKey(glfw.KeyUp) == glfw.Release {
-		u = false
-	}
-
-	if w.GetKey(glfw.KeyDown) == glfw.Release {
-		d = false
-	}
-
 	return u, d
 }
 
+//Sets all necesary inputs not handles by the key callback
 func getInp(w *glfw.Window) {
 	movekeys[0], movekeys[1] = getMoveInp(w)
 	cursorPos[0], cursorPos[1] = w.GetCursorPosition()
 	cursorPos[1] = float64(windowHeight) - cursorPos[1]
+
 	//fmt.Printf("Mousex:%v Mousey:%v\n", cursorPos[0], cursorPos[1])
 }
 
+//Registers key events
+func onKey(w *glfw.Window, key glfw.Key, sancode int, action glfw.Action, mods glfw.ModifierKey) {
+	if key == glfw.KeyEscape {
+		w.SetShouldClose(true)
+	}
+}
+
+//A simple mathematical clamp function
 func clamp(p, p0, p1 float64) float64 {
 
 	if p0 > p1 {
@@ -356,14 +386,18 @@ func clamp(p, p0, p1 float64) float64 {
 	return p
 }
 
+//Resets the court, not the whole game
 func restartGame() {
 	objects = objects[:0]
 	startupObjects()
 }
 
-func main() {
-	glfw.SetErrorCallback(errorCallback)
+//Window close code
+func onExit() {
+	//Things to do when exiting
+}
 
+func main() {
 	//Initialise glfw3
 	if !glfw.Init() {
 		panic("Can't initialise glfw")
@@ -388,38 +422,43 @@ func main() {
 
 	initOpenGl(window)
 	defer font.Release()
+	defer smlFnt.Release()
 
-	//Vsync
+	//Vsync 0=off, 1=on
 	glfw.SwapInterval(0)
 
 	//runtime.LockOSThread()
 
-	//Begin the program's main processes
-	running = true
+	startupObjects() // Instantiate objects
 
-	startupObjects()
 	prevTime = time.Now()
 
-	for !window.ShouldClose() && running {
+	for !window.ShouldClose() {
 		deltaTime = float64(time.Now().Sub(prevTime).Seconds())
 		prevTime = time.Now()
 		//fmt.Println(deltaTime)
 
 		//Do things
-		getInp(window)
-		runSteps()
+		getInp(window) // Get input
+		runSteps()     // Run the step function for every object
 		// rt := time.Now()
-		render()
+		render() //Draw all things that need to be drawn
 		//renderTime := time.Now().Sub(rt).Seconds()
 		//fmt.Println(renderTime)
 
-		window.SwapBuffers()
+		window.SwapBuffers() // Display new buffer
 		glfw.PollEvents()
+
 		//Wait out the rest of one second / max frames
 		time.Sleep((time.Second / maxFrames) - (time.Now().Sub(prevTime)))
+
 		accumTime += deltaTime
 		frames++
 		fps = float64(frames) / accumTime
 		//fps = 1 / deltaTime
+	}
+
+	if window.ShouldClose() {
+		onExit()
 	}
 }
