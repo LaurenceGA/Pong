@@ -13,3 +13,4 @@ Imports:
 -Clean up the code  
 -Put variables in their correct places.  
 -Fix object system  
+-Better initialisations for objects when created  
