@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 	"time"
 
@@ -33,7 +34,9 @@ var (
 	paddleWidth  = float64(15)
 	paddleHeight = float64(80)
 	movekeys     [2]bool
-	moveSpeed    = float64(600)
+	moveSpeed    = float64(400)
+	won          bool
+	winStr       string
 	//Misc
 	objects []object
 	//Window
@@ -55,8 +58,13 @@ type object interface {
 
 //Basic object properties
 type obj struct {
-	col colours.Colour
-	pos vector.Vector2
+	col      colours.Colour
+	pos      vector.Vector2
+	velocity vector.Vector2
+}
+
+func (o *obj) move() {
+	o.pos = o.pos.Add(o.velocity.Mul(deltaTime))
 }
 
 //Collider fields
@@ -69,8 +77,8 @@ type bCollider struct {
 type ball struct {
 	obj
 	bCollider
-	radius   float64
-	velocity vector.Vector2
+	radius float64
+	//velocity vector.Vector2
 }
 
 //X getter
@@ -98,7 +106,7 @@ func (b *ball) getCol() bCollider {
 //Ball logic: collision, movement
 func (b *ball) step() {
 	//Move
-	b.pos = b.pos.Add(b.velocity.Mul(deltaTime))
+	b.move()
 
 	//Bounce of ceiling
 	if (b.pos[1] - b.radius/2) <= 0 {
@@ -168,21 +176,40 @@ func (p *paddle) getCol() bCollider {
 
 //Paddle logic: movement, collider.
 func (p *paddle) step() {
+	p.move()
+
 	p.bCollider.x = p.pos[0]
 	p.bCollider.y = p.pos[1]
 
 	if p.id == 0 {
-		p.vspeed = 0
+		p.velocity[1] = 0
+		//p.vspeed = 0
 		if movekeys[0] {
-			p.vspeed = moveSpeed
+			//p.vspeed = moveSpeed
+			p.velocity[1] = moveSpeed
 		}
 		if movekeys[1] {
-			p.vspeed = -moveSpeed
+			//p.vspeed = -moveSpeed
+			p.velocity[1] = -moveSpeed
 		}
 	} else {
 		for _, obj := range objects {
 			if o, ok := obj.(*ball); ok {
-				p.pos[1] = o.pos[1]
+				if math.Abs(p.pos[1]-o.pos[1]) > (moveSpeed/2)*deltaTime {
+					if o.pos[1] > p.pos[1] {
+						p.velocity[1] = moveSpeed / 2
+					} else if o.pos[1] < p.pos[1] {
+						p.velocity[1] = -moveSpeed / 2
+					} else {
+						p.velocity[1] = 0
+					}
+				} else {
+					p.pos[1] = o.pos[1]
+				}
+
+				// if math.Abs(p.pos[1]-o.pos[1]) < moveSpeed {
+				// p.pos[1] = o.pos[1]
+				// }
 			}
 		}
 	}
@@ -276,9 +303,17 @@ func render() {
 		fmt.Println(ferr)
 	}
 
+	var w, h = drawUtil.GetBounds(font)
+
+	if won {
+		err := drawUtil.DrawString(float32((windowWidth/2)-w*len(winStr)/2),
+			float32((windowHeight/2)-h/2), winStr, colours.White, font)
+		if err != nil {
+			fmt.Println(err)
+		}
+	}
+
 	//Score
-	// drawUtil.DrawString(0, 0, "TEST", colours.White, font)
-	var w, _ = drawUtil.GetBounds(font)
 	lstr := strconv.Itoa(lscore)
 	rstr := strconv.Itoa(rscore)
 
@@ -321,15 +356,16 @@ func createObject(o object) {
 //Creates room's objects
 func startupObjects() {
 	//Make ball
-	createObject(&ball{obj: obj{colours.White, vector.Vector2{100, 100}},
-		radius: 10, velocity: vector.Vector2{350, 300}})
+	createObject(&ball{obj: obj{colours.White, vector.Vector2{50, float64(windowHeight) / 2},
+		vector.Vector2{600, 60}},
+		radius: 10})
 	//Make paddles
 	createObject(&paddle{id: 0, obj: obj{colours.White,
-		vector.Vector2{20, float64(windowHeight) / 2}},
+		vector.Vector2{20, float64(windowHeight) / 2}, vector.Vector2{}},
 		width: paddleWidth, height: paddleHeight,
 		bCollider: bCollider{20, float64(windowHeight) / 2, paddleWidth, paddleHeight, "paddle"}})
 	createObject(&paddle{id: 1, obj: obj{colours.White,
-		vector.Vector2{float64(windowWidth) - 20, float64(windowHeight) / 2}},
+		vector.Vector2{float64(windowWidth) - 20, float64(windowHeight) / 2}, vector.Vector2{}},
 		width: paddleWidth, height: paddleHeight,
 		bCollider: bCollider{float64(windowWidth) - 20, float64(windowHeight) / 2, paddleWidth, paddleHeight, "paddle"}})
 }
@@ -397,6 +433,12 @@ func onExit() {
 	//Things to do when exiting
 }
 
+func win(winner string) {
+	objects = objects[:0]
+	winStr = winner + " wins!"
+	won = true
+}
+
 func main() {
 	//Initialise glfw3
 	if !glfw.Init() {
@@ -445,6 +487,12 @@ func main() {
 		render() //Draw all things that need to be drawn
 		//renderTime := time.Now().Sub(rt).Seconds()
 		//fmt.Println(renderTime)
+
+		if lscore >= 10 {
+			win("Player")
+		} else if rscore >= 10 {
+			win("Computer")
+		}
 
 		window.SwapBuffers() // Display new buffer
 		glfw.PollEvents()
