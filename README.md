@@ -1,6 +1,8 @@
 # Pong
 Pong made in Golang  
-Code is rough and needs to be cleaned up
+Code is rough and needs to be cleaned up  
+
+Warning: Many features such as collision detection have been hacked in and should be replaced with propper systems
 
 ## Dependencies
 Imports:  
