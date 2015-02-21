@@ -4,6 +4,8 @@ Code is rough and needs to be cleaned up
 
 Warning: Many features such as collision detection have been hacked in and should be replaced with propper systems
 
+Up and Down arrow keys move the left paddle, first to 10 wins.  
+
 ## Dependencies  
 Acquire using:  
 > go get github.com/USER/REPO  
