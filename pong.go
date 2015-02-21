@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"runtime"
 	"strconv"
 	"time"
 
@@ -237,6 +238,9 @@ func main() {
 
 	window.MakeContextCurrent()
 
+	//OpenGl requires that it is executed in the main thread
+	runtime.LockOSThread()
+
 	if gl.Init() != 0 {
 		panic("GLEW init failed")
 	}
@@ -248,8 +252,6 @@ func main() {
 
 	//Vsync 0=off, 1=on
 	glfw.SwapInterval(0)
-
-	//runtime.LockOSThread()
 
 	startupObjects() // Instantiate objects
 
