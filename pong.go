@@ -2,9 +2,14 @@ package main
 
 import (
 	"fmt"
-	"math"
 	"strconv"
 	"time"
+
+	"github.com/LaurenceGA/Pong/game"
+	"github.com/LaurenceGA/Pong/gameinput"
+	"github.com/LaurenceGA/Pong/objbase"
+	"github.com/LaurenceGA/Pong/objbase/objects"
+	"github.com/LaurenceGA/Pong/screen"
 
 	"github.com/LaurenceGA/lib/colours"
 	"github.com/LaurenceGA/lib/drawUtil"
@@ -17,28 +22,19 @@ import (
 
 var (
 	//Main
-	windowWidth  = 640
-	windowHeight = 480
-	title        = "Pong"
-	prevTime     time.Time
-	deltaTime    float64
-	padding      = 20.0
-	rscore       = 0
-	lscore       = 0
+	prevTime  time.Time
+	deltaTime float64
+	padding   = 20.0
+	// rscore       = 0
+	// lscore       = 0
 	//FPS
 	maxFrames = time.Duration(60)
 	accumTime float64
 	frames    int
 	fps       = 0.0
-	//Paddle
-	paddleWidth  = float64(15)
-	paddleHeight = float64(80)
-	movekeys     [2]bool
-	moveSpeed    = float64(400)
-	won          bool
-	winStr       string
-	//Misc
-	objects []object
+	moveSpeed = float64(400)
+	won       bool
+	winStr    string
 	//Window
 	cursorPos vector.Vector2
 	screenDim vector.Vector2
@@ -46,176 +42,6 @@ var (
 	smlFnt    *gltext.Font
 	ballVerts [][2]float64
 )
-
-//Objects and what methods it has
-type object interface {
-	draw()
-	step()
-	xPos() float64
-	yPos() float64
-	getCol() bCollider
-}
-
-//Basic object properties
-type obj struct {
-	col      colours.Colour
-	pos      vector.Vector2
-	velocity vector.Vector2
-}
-
-func (o *obj) move() {
-	o.pos = o.pos.Add(o.velocity.Mul(deltaTime))
-}
-
-//Collider fields
-type bCollider struct {
-	x, y, width, height float64
-	tag                 string
-}
-
-//Defines ball's feilds
-type ball struct {
-	obj
-	bCollider
-	radius float64
-	//velocity vector.Vector2
-}
-
-//X getter
-func (b *ball) xPos() float64 {
-	return b.pos.X()
-}
-
-//Y getter
-func (b *ball) yPos() float64 {
-	return b.pos.Y()
-}
-
-//Draw a pre defined list of verticies of a cricle
-func (b *ball) draw() {
-	//drawUtil.DrawSquare(b.radius, b.col)
-	//drawUtil.DrawCircle(8, colours.White, 12)
-	drawUtil.DrawVertexes(ballVerts, colours.White)
-}
-
-//Collider getter
-func (b *ball) getCol() bCollider {
-	return b.bCollider
-}
-
-//Ball logic: collision, movement
-func (b *ball) step() {
-	//Move
-	b.move()
-
-	//Bounce of ceiling
-	if (b.pos[1] - b.radius/2) <= 0 {
-		b.velocity[1] *= -1
-	} else if (b.pos[1] + b.radius/2) >= float64(windowHeight) {
-		b.velocity[1] *= -1
-	}
-
-	b.bCollider.x = b.pos[0]
-	b.bCollider.y = b.pos[1]
-
-	for _, object := range objects {
-		col := object.getCol()
-		if col.tag == "paddle" {
-			if ((b.pos[0]-b.radius/2) <= (col.x+col.width/2) &&
-				(b.pos[0]-b.radius/2) >= (col.x-col.width/2)) ||
-				((b.pos[0]+b.radius/2) <= (col.x+col.width/2) &&
-					(b.pos[0]+b.radius/2 >= (col.x - col.width/2))) {
-				if b.pos[1]-b.radius/2 <= col.y+col.height/2 &&
-					b.pos[1]+b.radius/2 >= col.y-col.height/2 {
-					b.velocity[0] *= -1
-					b.velocity[1] = 400 * ((b.pos[1] - col.y) / (paddleHeight / 2))
-				}
-			}
-		}
-	}
-
-	if b.pos[0] >= float64(windowWidth)+padding {
-		lscore++
-		//fmt.Printf("Left side:%v, Right side:%v\n", lscore, rscore)
-		restartGame()
-	} else if b.pos[0] <= -padding {
-		rscore++
-		//fmt.Printf("Left side:%v, Right side:%v\n", lscore, rscore)
-		restartGame()
-	}
-}
-
-//Define paddle fields
-type paddle struct {
-	obj
-	bCollider
-	width, height float64
-	vspeed        float64
-	id            int
-}
-
-//Draw the paddle rectangle
-func (p *paddle) draw() {
-	drawUtil.DrawRect(p.width, p.height, p.col)
-}
-
-//X getter
-func (p *paddle) xPos() float64 {
-	return p.pos.X()
-}
-
-//Y getter
-func (p *paddle) yPos() float64 {
-	return p.pos.Y()
-}
-
-//Collider getter
-func (p *paddle) getCol() bCollider {
-	return p.bCollider
-}
-
-//Paddle logic: movement, collider.
-func (p *paddle) step() {
-	p.move()
-
-	p.bCollider.x = p.pos[0]
-	p.bCollider.y = p.pos[1]
-
-	if p.id == 0 {
-		p.velocity[1] = 0
-		//p.vspeed = 0
-		if movekeys[0] {
-			//p.vspeed = moveSpeed
-			p.velocity[1] = moveSpeed
-		}
-		if movekeys[1] {
-			//p.vspeed = -moveSpeed
-			p.velocity[1] = -moveSpeed
-		}
-	} else {
-		for _, obj := range objects {
-			if o, ok := obj.(*ball); ok {
-				if math.Abs(p.pos[1]-o.pos[1]) > (moveSpeed/2)*deltaTime {
-					if o.pos[1] > p.pos[1] {
-						p.velocity[1] = moveSpeed / 2
-					} else if o.pos[1] < p.pos[1] {
-						p.velocity[1] = -moveSpeed / 2
-					} else {
-						p.velocity[1] = 0
-					}
-				} else {
-					p.pos[1] = o.pos[1]
-				}
-
-				// if math.Abs(p.pos[1]-o.pos[1]) < moveSpeed {
-				// p.pos[1] = o.pos[1]
-				// }
-			}
-		}
-	}
-	p.pos[1] += p.vspeed * deltaTime
-	p.pos[1] = clamp(p.pos[1], paddleHeight/2, float64(windowHeight)-paddleHeight/2)
-}
 
 //Displays and glfw errors
 func errorCallback(err glfw.ErrorCode, desc string) {
@@ -233,9 +59,11 @@ func initOpenGl(window *glfw.Window) {
 	w, h := window.GetSize() // query window to get screen pixels
 	width, height := window.GetFramebufferSize()
 	window.SetPosition(int(*sw/2)-(w/2), int(*sh/2)-(h/2))
+	screen.WindowDim[0], screen.WindowDim[1] = w, h
+	screen.ScreenDim[0], screen.ScreenDim[1] = int(*sw), int(*sh)
 
 	window.SetSizeCallback(onResize)
-	window.SetKeyCallback(onKey)
+	window.SetKeyCallback(gameinput.OnKey)
 	glfw.SetErrorCallback(errorCallback)
 
 	gl.Viewport(0, 0, width, height)
@@ -268,14 +96,15 @@ func onResize(window *glfw.Window, w, h int) {
 	gl.Ortho(0, float64(w), 0, float64(h), -1, 1)
 	gl.MatrixMode(gl.MODELVIEW)
 	gl.LoadIdentity()
-	windowWidth = w
-	windowHeight = h
+	game.WindowWidth = w
+	game.WindowHeight = h
+	screen.WindowDim[0], screen.WindowDim[1] = w, h
 
-	for _, o := range objects {
-		p, ok := o.(*paddle)
+	for _, o := range objbase.Instances {
+		p, ok := o.(*objects.Paddle)
 		if ok {
-			if p.id == 1 {
-				p.pos[0] = float64(w - 20)
+			if p.Tag == "computer" {
+				p.Pos[0] = float64(w - 20)
 			}
 		}
 	}
@@ -292,8 +121,8 @@ func render() {
 	gl.LoadIdentity()
 
 	//Background
-	drawUtil.DrawLine(float64(windowWidth/2), 0, float64(windowWidth/2),
-		float64(windowHeight), colours.White, 2.0)
+	drawUtil.DrawLine(float64(game.WindowWidth/2), 0, float64(game.WindowWidth/2),
+		float64(game.WindowHeight), colours.White, 2.0)
 	// drawUtil.DrawDotLine(float64(windowWidth/2), 0, float64(windowWidth/2),
 	// float64(windowHeight), colours.White, 2.0, 16)
 
@@ -306,126 +135,54 @@ func render() {
 	var w, h = drawUtil.GetBounds(font)
 
 	if won {
-		err := drawUtil.DrawString(float32((windowWidth/2)-w*len(winStr)/2),
-			float32((windowHeight/2)-h/2), winStr, colours.White, font)
+		err := drawUtil.DrawString(float32((game.WindowWidth/2)-w*len(winStr)/2),
+			float32((game.WindowHeight/2)-h/2), winStr, colours.White, font)
 		if err != nil {
 			fmt.Println(err)
 		}
 	}
 
 	//Score
-	lstr := strconv.Itoa(lscore)
-	rstr := strconv.Itoa(rscore)
+	lstr := strconv.Itoa(game.Lscore)
+	rstr := strconv.Itoa(game.Rscore)
 
-	if lscore < 10 {
+	if game.Lscore < 10 {
 		lstr = "0" + lstr
 	}
-	if rscore < 10 {
+	if game.Rscore < 10 {
 		rstr = "0" + rstr
 	}
 
-	err := drawUtil.DrawString(float32(windowWidth/2-5-len(lstr)*w), 10, lstr, colours.White, font)
+	err := drawUtil.DrawString(float32(game.WindowWidth/2-5-len(lstr)*w), 10, lstr, colours.White, font)
 	if err != nil {
 		fmt.Println(err)
 	}
-	err1 := drawUtil.DrawString(float32(windowWidth/2+10), 10, rstr, colours.White, font)
+	err1 := drawUtil.DrawString(float32(game.WindowWidth/2+10), 10, rstr, colours.White, font)
 	if err1 != nil {
 		fmt.Println(err1)
 	}
 
-	for _, o := range objects {
+	for _, o := range objbase.Instances {
 		drawObject(o)
 	}
 }
 
 //handles calling a given objects draw function
 //while also making sure it is in the right place and drawn correctly
-func drawObject(o object) {
+func drawObject(o objbase.Object) {
 	gl.PushMatrix()
 	//position
-	gl.Translatef(float32(o.xPos()), float32(o.yPos()), 0.0)
-	o.draw()
+	gl.Translatef(float32(o.GetBase().Pos[0]), float32(o.GetBase().Pos[1]), 0.0)
+	o.Draw()
 	gl.PopMatrix()
-}
-
-//Create an object and store it's reference
-func createObject(o object) {
-	objects = append(objects, o)
-}
-
-//Creates room's objects
-func startupObjects() {
-	//Make ball
-	createObject(&ball{obj: obj{colours.White, vector.Vector2{50, float64(windowHeight) / 2},
-		vector.Vector2{600, 60}},
-		radius: 10})
-	//Make paddles
-	createObject(&paddle{id: 0, obj: obj{colours.White,
-		vector.Vector2{20, float64(windowHeight) / 2}, vector.Vector2{}},
-		width: paddleWidth, height: paddleHeight,
-		bCollider: bCollider{20, float64(windowHeight) / 2, paddleWidth, paddleHeight, "paddle"}})
-	createObject(&paddle{id: 1, obj: obj{colours.White,
-		vector.Vector2{float64(windowWidth) - 20, float64(windowHeight) / 2}, vector.Vector2{}},
-		width: paddleWidth, height: paddleHeight,
-		bCollider: bCollider{float64(windowWidth) - 20, float64(windowHeight) / 2, paddleWidth, paddleHeight, "paddle"}})
 }
 
 //Runs the step event logic for every object
 func runSteps() {
 	//Processes
-	for _, o := range objects {
-		o.step()
+	for _, o := range objbase.Instances {
+		o.Step(deltaTime)
 	}
-}
-
-//Specifically finds whether there is intent to move
-func getMoveInp(w *glfw.Window) (bool, bool) {
-	//u, d bool
-	var u, d bool = false, false
-	if w.GetKey(glfw.KeyUp) == glfw.Press {
-		u = true
-	}
-
-	if w.GetKey(glfw.KeyDown) == glfw.Press {
-		d = true
-	}
-
-	return u, d
-}
-
-//Sets all necesary inputs not handles by the key callback
-func getInp(w *glfw.Window) {
-	movekeys[0], movekeys[1] = getMoveInp(w)
-	cursorPos[0], cursorPos[1] = w.GetCursorPosition()
-	cursorPos[1] = float64(windowHeight) - cursorPos[1]
-
-	//fmt.Printf("Mousex:%v Mousey:%v\n", cursorPos[0], cursorPos[1])
-}
-
-//Registers key events
-func onKey(w *glfw.Window, key glfw.Key, sancode int, action glfw.Action, mods glfw.ModifierKey) {
-	if key == glfw.KeyEscape {
-		w.SetShouldClose(true)
-	}
-}
-
-//A simple mathematical clamp function
-func clamp(p, p0, p1 float64) float64 {
-
-	if p0 > p1 {
-		panic("Improper use of clamp")
-	} else if p < p0 {
-		return p0
-	} else if p > p1 {
-		return p1
-	}
-	return p
-}
-
-//Resets the court, not the whole game
-func restartGame() {
-	objects = objects[:0]
-	startupObjects()
 }
 
 //Window close code
@@ -434,9 +191,32 @@ func onExit() {
 }
 
 func win(winner string) {
-	objects = objects[:0]
+	objbase.Instances = objbase.Instances[:0]
 	winStr = winner + " wins!"
 	won = true
+}
+
+//CreateObject creates and object and stores it's reference
+func createObject(o objbase.Object) {
+	objbase.Instances = append(objbase.Instances, o)
+}
+
+//RestartGame resets the court, not the whole game
+func restartGame() {
+	objbase.Instances = objbase.Instances[:0]
+	startupObjects()
+}
+
+//StartupObjects creates room's objects
+func startupObjects() {
+	b := (&objects.Ball{}).New(vector.Vector2{50, float64(screen.WindowDim[1]) / 2}, 10,
+		vector.Vector2{600, 60})
+	b.BallVerts = ballVerts
+	createObject(b)
+	createObject((&objects.Paddle{}).New(vector.Vector2{20, float64(screen.WindowDim[1]) / 2},
+		game.PaddleWidth, game.PaddleHeight, "player"))
+	createObject((&objects.Paddle{}).New(vector.Vector2{float64(screen.WindowDim[0]) - 20, float64(screen.WindowDim[1]) / 2},
+		game.PaddleWidth, game.PaddleHeight, "computer"))
 }
 
 func main() {
@@ -449,7 +229,7 @@ func main() {
 	defer glfw.Terminate()
 
 	//Create window
-	window, err := glfw.CreateWindow(windowWidth, windowHeight, title, nil, nil)
+	window, err := glfw.CreateWindow(game.WindowWidth, game.WindowHeight, game.Title, nil, nil)
 	//Panic if we can't do it
 	if err != nil {
 		panic(err)
@@ -481,17 +261,23 @@ func main() {
 		//fmt.Println(deltaTime)
 
 		//Do things
-		getInp(window) // Get input
-		runSteps()     // Run the step function for every object
+		//getInp(window) // Get input
+		gameinput.GetInp(window)
+		runSteps() // Run the step function for every object
 		// rt := time.Now()
 		render() //Draw all things that need to be drawn
 		//renderTime := time.Now().Sub(rt).Seconds()
 		//fmt.Println(renderTime)
 
-		if lscore >= 10 {
+		if game.Lscore >= 10 {
 			win("Player")
-		} else if rscore >= 10 {
+		} else if game.Rscore >= 10 {
 			win("Computer")
+		}
+
+		if game.Restart {
+			restartGame()
+			game.Restart = false
 		}
 
 		window.SwapBuffers() // Display new buffer
