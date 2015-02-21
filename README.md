@@ -4,7 +4,10 @@ Code is rough and needs to be cleaned up
 
 Warning: Many features such as collision detection have been hacked in and should be replaced with propper systems
 
-## Dependencies
+## Dependencies  
+Acquire using:  
+> go get github.com/USER/REPO  
+
 Imports:  
 -[github.com/go-gl/gl](https://github.com/go-gl/gl)  
 -[github.com/go-gl/glfw3](https://github.com/go-gl/glfw3)  
