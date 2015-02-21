@@ -8,7 +8,9 @@ Up and Down arrow keys move the left paddle, first to 10 wins.
 
 ## Dependencies  
 Acquire using:  
-> go get github.com/USER/REPO  
+> go get github.com/USER/REPO 
+
+However, note that most of go-gl's bindings require bindings to already be on your system. At least with the versions this was programmed in. Newer go-gl OpenGL and GLFW libraries have built in dependencies.  
 
 Imports:  
 -[github.com/go-gl/gl](https://github.com/go-gl/gl)  
