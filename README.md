@@ -18,8 +18,10 @@ Imports:
 -[github.com/go-gl/gltext](https://github.com/go-gl/gltext)  
 -[github.com/LaurenceGA/lib](https://github.com/LaurenceGA/lib) (all packages)
 
+##Screenshots
+![Pong1](https://github.com/LaurenceGA/Pong/blob/master/Screenshots/Pong1.png)
+![Pong2](https://github.com/LaurenceGA/Pong/blob/master/Screenshots/Pong2.png)
+
 ## TODO
--Clean up the code  
--Put variables in their correct places.  
--Fix object system  
--Better initialisations for objects when created  
+-Clean up the code.  
+-Put variables in their correct places.   
