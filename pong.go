@@ -33,9 +33,12 @@ var (
 	accumTime float64
 	frames    int
 	fps       = 0.0
-	moveSpeed = float64(400)
-	won       bool
-	winStr    string
+	//Misc
+	moveSpeed  = float64(400)
+	won        bool
+	winStr     string
+	fontPath   = "github.com/LaurenceGA/Pong/src/fonts/bitmap_font.png"
+	configPath = "github.com/LaurenceGA/Pong/src/fonts/bitmap-font.js"
 	//Window
 	cursorPos vector.Vector2
 	screenDim vector.Vector2
@@ -75,8 +78,8 @@ func initOpenGl(window *glfw.Window) {
 	gl.LoadIdentity()
 	gl.ClearColor(0, 0, 0, 1)
 
-	font = drawUtil.InitGltext(8)
-	smlFnt = drawUtil.InitGltext(2)
+	font = drawUtil.InitGltext(8, fontPath, configPath)
+	smlFnt = drawUtil.InitGltext(2, fontPath, configPath)
 	ballVerts = drawUtil.MakeCircle(8, 12)
 }
 
