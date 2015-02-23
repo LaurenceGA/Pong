@@ -1,6 +1,6 @@
 package gameinput
 
-import glfw "github.com/go-gl/glfw3"
+import "github.com/go-gl/glfw/v3.1/glfw"
 
 //Move keys are the ones that move the paddle
 var Movekeys [2]bool

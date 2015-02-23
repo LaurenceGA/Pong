@@ -65,6 +65,23 @@ func (b *Ball) Step(deltaTime float64) {
 					b.Pos[1]+b.Radius/2 >= col.Y-col.Height/2 {
 					b.Velocity[0] *= -1
 					b.Velocity[1] = 400 * ((b.Pos[1] - col.Y) / (game.PaddleHeight / 2))
+					if o.Tag == "player" {
+						// o.GetNewOffset()
+						// if obj := objbase.FindObjOfType("*objects.Paddle"); obj != nil {
+						// if paddle, ok := obj.(*Paddle); ok && paddle.Tag == "computer" {
+						// fmt.Println("Doign he thing")
+						// paddle.GetNewOffset()
+						// }
+						// }
+						objs := objbase.FindObjsOfType("*objects.Paddle")
+						for _, obj := range objs {
+							if paddle, ok := obj.(*Paddle); ok {
+								if paddle.Tag == "computer" {
+									paddle.GetNewOffset()
+								}
+							}
+						}
+					}
 				}
 			}
 		}

@@ -17,7 +17,7 @@ import (
 	"github.com/LaurenceGA/lib/vector"
 
 	"github.com/go-gl/gl"
-	glfw "github.com/go-gl/glfw3"
+	"github.com/go-gl/glfw/v3.1/glfw"
 	"github.com/go-gl/gltext"
 )
 
@@ -47,28 +47,22 @@ var (
 	ballVerts [][2]float64
 )
 
-//Displays and glfw errors
-func errorCallback(err glfw.ErrorCode, desc string) {
-	fmt.Printf("%v: %v\n", err, desc)
-}
-
 //Initialises callbacks, drawing perspective, fonts etc.
 func initOpenGl(window *glfw.Window) {
-	monitor, _ := glfw.GetPrimaryMonitor()
-	vidMode, _ := monitor.GetVideoMode()
+	monitor := glfw.GetPrimaryMonitor()
+	vidMode := monitor.GetVideoMode()
 	screenDim[0] = float64(vidMode.Width)
 	screenDim[1] = float64(vidMode.Height)
 	sw := &screenDim[0]
 	sh := &screenDim[1]
 	w, h := window.GetSize() // query window to get screen pixels
 	width, height := window.GetFramebufferSize()
-	window.SetPosition(int(*sw/2)-(w/2), int(*sh/2)-(h/2))
+	window.SetPos(int(*sw/2)-(w/2), int(*sh/2)-(h/2))
 	screen.WindowDim[0], screen.WindowDim[1] = w, h
 	screen.ScreenDim[0], screen.ScreenDim[1] = int(*sw), int(*sh)
 
 	window.SetSizeCallback(onResize)
 	window.SetKeyCallback(gameinput.OnKey)
-	glfw.SetErrorCallback(errorCallback)
 
 	gl.Viewport(0, 0, width, height)
 	gl.MatrixMode(gl.PROJECTION)
@@ -225,8 +219,9 @@ func startupObjects() {
 
 func main() {
 	//Initialise glfw3
-	if !glfw.Init() {
-		panic("Can't initialise glfw")
+	err := glfw.Init()
+	if err != nil {
+		panic(err)
 	}
 
 	//Ensure termination at end of main func
@@ -247,7 +242,6 @@ func main() {
 	if gl.Init() != 0 {
 		panic("GLEW init failed")
 	}
-	gl.GetError()
 
 	initOpenGl(window)
 	defer font.Release()

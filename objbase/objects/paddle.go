@@ -2,6 +2,7 @@ package objects
 
 import (
 	"math"
+	"math/rand"
 
 	"github.com/LaurenceGA/lib/colours"
 	"github.com/LaurenceGA/lib/drawUtil"
@@ -17,11 +18,18 @@ type Paddle struct {
 	objbase.Collider
 	Width, Height float64
 	moveSpeed     float64
+	targetOffset  float64
 }
 
 //GetBase returns a reference to it's base
 func (p *Paddle) GetBase() *objbase.Base {
 	return &p.Base
+}
+
+//GetNewOffset defines where the paddle will try to be
+func (p *Paddle) GetNewOffset() {
+	p.targetOffset = (rand.Float64() * p.Height) - (p.Height / 2)
+	// fmt.Println(p.targetOffset)
 }
 
 //New initialises a paddle
@@ -59,16 +67,16 @@ func (p *Paddle) Step(deltaTime float64) {
 	} else {
 		for _, obj := range objbase.Instances {
 			if o, ok := obj.(*Ball); ok {
-				if math.Abs(p.Pos[1]-o.Pos[1]) > (p.moveSpeed/2)*deltaTime {
-					if o.Pos[1] > p.Pos[1] {
+				if math.Abs(p.Pos[1]-(o.Pos[1]+p.targetOffset)) > (p.moveSpeed/2)*deltaTime {
+					if o.Pos[1]+p.targetOffset > p.Pos[1] {
 						p.Velocity[1] = p.moveSpeed / 2
-					} else if o.Pos[1] < p.Pos[1] {
+					} else if o.Pos[1]+p.targetOffset < p.Pos[1] {
 						p.Velocity[1] = -p.moveSpeed / 2
 					} else {
 						p.Velocity[1] = 0
 					}
 				} else {
-					p.Pos[1] = o.Pos[1]
+					p.Pos[1] = o.Pos[1] + p.targetOffset
 				}
 			}
 		}
