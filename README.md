@@ -8,7 +8,7 @@ Up and Down arrow keys move the left paddle, first to 10 wins.
 
 ## Dependencies  
 Acquire using:  
-> go get github.com/USER/REPO 
+> go get github.com/LaurenceGA/Pong 
 
 However, note that most of go-gl's bindings require bindings to already be on your system. At least with the versions this was programmed in. Newer go-gl OpenGL and GLFW libraries have built in dependencies.  
 
@@ -18,10 +18,6 @@ Imports:
 -[github.com/go-gl/gltext](https://github.com/go-gl/gltext)  
 -[github.com/LaurenceGA/lib](https://github.com/LaurenceGA/lib) (all packages)
 
-##Screenshots
+## Screenshots
 ![Pong1](https://github.com/LaurenceGA/Pong/blob/master/Screenshots/Pong1.png)
 ![Pong2](https://github.com/LaurenceGA/Pong/blob/master/Screenshots/Pong2.png)
-
-## TODO
--Clean up the code.  
--Put variables in their correct places.   
